@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -31,6 +32,8 @@ import com.job_finder.response.ProfileData;
 import com.job_finder.response.UserProfileList;
 import com.job_finder.service.UserService;
 
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
 public class UserController {
@@ -40,9 +43,13 @@ public class UserController {
 	@Autowired
 	private UserRepository ur;
 
+
+
 	@GetMapping("/get-user-profile/{userId}")
 	public ResponseEntity<ProfileData> getUserData(@PathVariable Long userId) {
 
+		log.info("get-user-profile with id end point call()" +userId);
+		
 		ProfileData userprofile = userService.getUserProfile(userId);
 		return new ResponseEntity<>(userprofile, HttpStatus.OK);
 	}
@@ -53,23 +60,23 @@ public class UserController {
 	}
 
 	@PostMapping("/set-password")
-    public ResponseEntity<String> setPassword(@RequestParam("email") String email, @RequestParam("password") String password) {
-        String result = userService.setPassword(email, password);
-        return ResponseEntity.ok(result);
-    }
+	public ResponseEntity<String> setPassword(@RequestParam("email") String email,
+			@RequestParam("password") String password) {
+		String result = userService.setPassword(email, password);
+		return ResponseEntity.ok(result);
+	}
 
 	@PostMapping("/verify-otp")
 	public ResponseEntity<String> verifyOTP(@RequestParam("email") String email, @RequestParam("otp") String otp) {
-	    // Perform OTP verification logic here
-	    Boolean flag = userService.getOtp(email, otp);
+		// Perform OTP verification logic here
+		Boolean flag = userService.getOtp(email, otp);
 
-	    if (flag) {
-	        return ResponseEntity.ok("OTP verification successful");
-	    } else {
-	        return ResponseEntity.badRequest().body("Invalid OTP");
-	    }
+		if (flag) {
+			return ResponseEntity.ok("OTP verification successful");
+		} else {
+			return ResponseEntity.badRequest().body("Invalid OTP");
+		}
 	}
-
 
 	@PostMapping("/login")
 	public ResponseEntity<LoginMessage> loginEmployee(@RequestBody LoginForm loginForm) {
@@ -93,6 +100,7 @@ public class UserController {
 
 		return new ResponseEntity<>(ur.findAll(), HttpStatus.OK);
 	}
+
 	@GetMapping("/{userId}")
 	public ResponseEntity<UserDtls> getUserById(@PathVariable Long userId) {
 		Optional<UserDtls> user = userService.getUserDetailsById(userId);
@@ -151,19 +159,48 @@ public class UserController {
 		String updatedProfile = userService.updateProfile(profileId, updateProfile);
 		return new ResponseEntity<>(updatedProfile, HttpStatus.OK);
 	}
+
+	@GetMapping("/profiles")
+	public List<UserProfileList> getUserProfiles(@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size) {
+		return userService.getUserProfileList(page, size);
+	}
+
 	
-	 @GetMapping("/profiles")
-	    public List<UserProfileList> getUserProfiles(
-	            @RequestParam(defaultValue = "0") int page,
-	            @RequestParam(defaultValue = "10") int size
-	    ) {
-	        return userService.getUserProfileList(page, size);
-	    }
-	 
-	 
-	 @PostMapping("/upload-img/{profileId}")
-	    public ResponseEntity<String> handleFileUpload(@PathVariable Long profileId, @RequestParam("file") MultipartFile file) {
-	        userService.uploadImage(profileId, file);
-	        return ResponseEntity.ok("Image uploaded successfully!");
-	    }
+	@PostMapping("/upload-image/{profileId}")
+	public ResponseEntity<String> uploadimage(@PathVariable Long profileId, @RequestPart("file") MultipartFile file) {
+
+			if (file.isEmpty()) {
+				return new ResponseEntity<>("File is empty", HttpStatus.BAD_REQUEST);
+			}
+			String msg =userService.addImage(profileId,file);
+
+			return new ResponseEntity<>(msg, HttpStatus.OK);
+
+
+	}
+
+	@GetMapping("/image/{profileId}")
+	public ResponseEntity<Resource> getImage(@PathVariable Long profileId) {
+		ResponseEntity<Resource> msg =userService.getProfileImage(profileId);
+
+		return msg;
+	}
+	
+	@PostMapping("/upload-file/{profileId}")
+	public ResponseEntity<String> uploadfile(@PathVariable Long profileId, @RequestPart("file") MultipartFile file) {
+
+			if (file.isEmpty()) {
+				return new ResponseEntity<>("File is empty", HttpStatus.BAD_REQUEST);
+			}
+			String msg =userService.addfile(profileId,file);
+			return new ResponseEntity<>(msg, HttpStatus.OK);
+	}
+
+	@GetMapping("/file/{profileId}")
+	public ResponseEntity<Resource> getfile(@PathVariable Long profileId) {
+		ResponseEntity<Resource> msg =userService.getProfile(profileId);
+
+		return msg;
+	}
 }
